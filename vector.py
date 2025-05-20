@@ -18,18 +18,19 @@ Usage:
 3. Reuse the retriever in your main RAG pipeline via `get_retriever(city)`.
 """
 
-from langchain_ollama import OllamaEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
+
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 import os
 import pandas as pd
 
 # Step 1: Load review data from CSV
-csv_path = "/Users/amittailerer/Code/CursorProjects/pizza_review_system/data/dummy_israel_pizza_reviews.csv"
+csv_path = "data/final_israel_pizza_reviews_realistic.csv"
 df = pd.read_csv(csv_path)
 
 # Step 2: Initialize embedding model
-embeddings = OllamaEmbeddings(model="mxbai-embed-large")
+embeddings = HuggingFaceEmbeddings(model_name="BAAI/bge-small-en-v1.5")
 
 # Step 3: Configure database location
 DB_PATH = "chroma_langchain_db"
