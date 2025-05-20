@@ -8,6 +8,11 @@ An advanced question-answering system for exploring pizza restaurant reviews usi
 - Intelligent query rewriting for better search results
 - City-aware filtering with smart city name normalization
 - Natural language question answering using Llama 3.2
+- Beautiful Streamlit dashboard with:
+  - Form-based query submission
+  - Styled answer display
+  - Expandable review details
+  - Emoji-enhanced UI elements
 - Comprehensive review metadata integration (ratings, dates, categories)
 - Persistent vector storage for fast retrieval
 
@@ -59,10 +64,17 @@ The system uses a structured CSV format (`data/combined_reviews.csv`) with the f
 python vector.py
 ```
 
-2. Start the interactive Q&A system:
+2. Start the interactive dashboard:
 ```bash
-python main.py
+streamlit run dashboard.py
 ```
+
+The dashboard provides:
+- Clean, form-based interface
+- Real-time query processing
+- Beautifully formatted answers
+- Expandable review details with metadata
+- Emoji-enhanced visualization
 
 Example questions:
 - "What are the best pizza places in Tel Aviv?"
@@ -71,10 +83,16 @@ Example questions:
 
 ## Project Structure
 
-- `main.py`: Core Q&A system implementing:
-  - Query preprocessing and city normalization
-  - Review retrieval and context formatting
-  - Natural language answer generation
+- `dashboard.py`: Streamlit interface featuring:
+  - Form-based query input
+  - Styled answer display
+  - Expandable review details
+  - Enhanced visual elements
+  
+- `core.py`: Core Q&A system implementing:
+  - Query preprocessing
+  - Review retrieval and formatting
+  - Answer generation
   
 - `vector.py`: Vector store management:
   - Document processing and embedding
@@ -94,7 +112,7 @@ Example questions:
 - Metadata-aware retrieval with city filtering
 - Automatic document processing from CSV
 
-### Q&A System (main.py)
+### Q&A System (core.py)
 - Two-stage LLM pipeline:
   1. Query preprocessing:
      - City name normalization
@@ -103,6 +121,14 @@ Example questions:
      - Context-aware response formulation
      - Location-specific recommendations
      - Natural, conversational tone
+
+### Dashboard (dashboard.py)
+- Modern Streamlit interface with:
+  - Form-based input handling
+  - Real-time query processing
+  - Styled answer display
+  - Expandable review sections
+  - Enhanced visual elements
 
 ## Notes
 
