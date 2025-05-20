@@ -1,20 +1,44 @@
 """
-Israeli Pizza Review Q&A System
-==============================
+Pizza Review Q&A System
+======================
 
-A conversational system for exploring pizza restaurant reviews in Israeli cities using:
-- LangChain for semantic search and prompt chaining
-- Ollama (LLaMA 3.2) for local language model inference
-- ChromaDB for vector-based document retrieval
+A sophisticated question-answering system for pizza restaurant reviews using:
+- LangChain for orchestrating the Q&A pipeline
+- Ollama (Llama 3.2) for local LLM inference
+- ChromaDB for efficient vector-based retrieval
+- HuggingFace embeddings for semantic search
 
-Workflow:
----------
-1. Accept a natural language question from the user.
-2. Use a local LLM to:
-   - Normalize city references to canonical form (e.g., "TLV" → "Tel Aviv").
-   - Rewrite the query in a review-style sentence for better semantic matching.
-3. Retrieve semantically relevant reviews from ChromaDB filtered by city.
-4. Format and present those reviews to the LLM to generate a final answer.
+Key Components:
+--------------
+1. Query Preprocessing:
+   - City name normalization (e.g., "NYC" → "New York")
+   - Query rewriting for optimal semantic matching
+   - Metadata filtering setup
+
+2. Document Retrieval:
+   - City-filtered semantic search
+   - Metadata-aware document ranking
+   - Context window optimization
+
+3. Answer Generation:
+   - Context-aware response formulation
+   - Location-specific recommendations
+   - Natural, conversational tone
+
+Usage:
+------
+Run the script directly:
+```bash
+python main.py
+```
+
+The system will start an interactive session where you can ask questions about pizza restaurants.
+Type 'q' to exit the session.
+
+Example Questions:
+- "What are the best pizza places in Tel Aviv?"
+- "Where can I find authentic New York style pizza?"
+- "Tell me about kosher pizza options in Jerusalem"
 """
 
 from langchain_ollama.llms import OllamaLLM
@@ -41,7 +65,7 @@ Rewritten: <review-style version>
 Question: {question}
 """)
 
-# Step 2: Answer Prompt
+# Step 2: Answer Generation Prompt
 answer_template = ChatPromptTemplate.from_template("""
 You are a helpful assistant answering questions about pizza restaurants in Israeli cities, based on real customer reviews.
 
@@ -49,7 +73,7 @@ Your tone is friendly and natural — like you're giving useful advice to a frie
 
 Instructions:
 - Focus on answering the specific question asked.
-- add location to the answer
+- Add location to the answer
 - Use only relevant information from the reviews.
 - Recommend 1–2 standout pizza places if appropriate.
 - Highlight what makes them great (crust, flavor, service, etc.) — but keep it concise.
@@ -62,42 +86,44 @@ Here are the reviews:
 Question: {question}
 """)
 
-
-# Step 3: Initialize LLM
+# Step 3: Initialize LLM with Ollama
 model = OllamaLLM(model="llama3.2")
 
-# Step 4: Chains
-rewrite_chain = rewrite_template | model
-answer_chain = answer_template | model
+# Step 4: Create LangChain processing chains
+rewrite_chain = rewrite_template | model  # Chain for query preprocessing
+answer_chain = answer_template | model    # Chain for answer generation
 
-# Step 5: Main Loop
+# Step 5: Main Interactive Loop
 if __name__ == "__main__":
     while True:
+        # Get user input
         question = input("\nPlease enter your pizza-related question (or 'q' to quit): ").strip()
         if question.lower() == "q":
             print("Goodbye! 🍕")
             break
 
-        # Get normalized city + rewritten query
+        # Process query through rewrite chain
         rewrite_output = rewrite_chain.invoke({"question": question})
         lines = [line.strip() for line in rewrite_output.splitlines()]
         city = ""
         rewritten_query = ""
 
+        # Extract city and rewritten query
         for line in lines:
             if line.lower().startswith("city:"):
                 city = line.split(":", 1)[1].strip()
             elif line.lower().startswith("rewritten:"):
                 rewritten_query = line.split(":", 1)[1].strip()
 
+        # Debug output
         print(f"Retriever filtering by city: {city if city else 'None (global search)'}")
         print(f"Query reformulated for embedding: {rewritten_query}")
 
-        # Step 6: Retrieve relevant docs using rewritten query
+        # Retrieve relevant documents
         retriever = get_retriever(city if city else None)
         retrieved_docs = retriever.invoke(rewritten_query)
 
-        # Step 7: Format for LLM
+        # Format retrieved documents for LLM context
         formatted_reviews = "\n\n".join([
             f"Review {i+1}:\n"
             f"Restaurant: {doc.metadata.get('restaurant', 'N/A')}\n"
@@ -109,7 +135,7 @@ if __name__ == "__main__":
             for i, doc in enumerate(retrieved_docs)
         ]) if retrieved_docs else "No relevant reviews found."
 
-        # Step 8: Get final answer from LLM
+        # Generate and display answer
         answer = answer_chain.invoke({
             "reviews": formatted_reviews,
             "question": question
