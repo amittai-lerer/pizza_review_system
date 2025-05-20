@@ -1,92 +1,89 @@
 """
-Vector Store Implementation for Pizza Reviews
-==========================================
+Israeli Pizza Review Vector Store Setup
+=======================================
 
-A semantic search system that converts restaurant reviews into vector embeddings
-for efficient similarity search. This enables finding relevant reviews for any question.
+This script creates or loads a persistent vector store using LangChain and ChromaDB
+for semantic search over pizza restaurant reviews in Israeli cities.
 
-System Components & Flow:
-1. Data Loading:
-   - Reads restaurant reviews from CSV
-   - Processes text and metadata (ratings, dates)
-   - Creates LangChain Document objects
+Key Components:
+---------------
+- CSV Loader: Parses review data from a structured CSV file
+- Ollama Embeddings: Converts text into high-dimensional vectors using `mxbai-embed-large`
+- Chroma Vector Store: Stores vectors and enables fast metadata-filtered retrieval
 
-2. Vector Processing:
-   - Uses Ollama embeddings to convert text to vectors
-   - Stores vectors in ChromaDB for efficient retrieval
-   - Provides a retriever interface for semantic search
-
-3. Persistence:
-   - Saves vectors to disk for reuse
-   - Avoids reprocessing on subsequent runs
-   - Maintains vector database in 'chroma_langchain_db'
-
-Technical Details:
-- Embedding Model: mxbai-embed-large (optimized for semantic search)
-- Vector Store: ChromaDB (efficient similarity search)
-- Document Format: LangChain Documents with metadata
-- Search Config: Top-5 most relevant results
-
-Integration with main.py:
-- Exposes 'retriever' object for semantic search
-- Returns Document objects with review content and metadata
-- Enables semantic matching between questions and reviews
+Usage:
+------
+1. Ensure `dummy_israel_pizza_reviews.csv` is present in the data folder.
+2. Run this script once to create the vector store.
+3. Reuse the retriever in your main RAG pipeline via `get_retriever(city)`.
 """
 
 from langchain_ollama import OllamaEmbeddings
-from langchain_community.vectorstores import Chroma
+from langchain_chroma import Chroma
 from langchain_core.documents import Document
 import os
 import pandas as pd
 
-# Step 1: Load and prepare review data
-try:
-    # Read reviews from CSV file
-    df = pd.read_csv("realistic_restaurant_reviews.csv")
-except Exception as e:
-    raise
+# Step 1: Load review data from CSV
+csv_path = "/Users/amittailerer/Code/CursorProjects/pizza_review_system/data/dummy_israel_pizza_reviews.csv"
+df = pd.read_csv(csv_path)
 
-# Step 2: Initialize embedding model for vector conversion
+# Step 2: Initialize embedding model
 embeddings = OllamaEmbeddings(model="mxbai-embed-large")
 
-# Step 3: Configure vector store settings
-db_location = "chroma_langchain_db"
-# Check if we need to create new vectors or can load existing ones
-add_documents = not os.path.exists(db_location)
+# Step 3: Configure database location
+DB_PATH = "chroma_langchain_db"
+add_documents = not os.path.exists(DB_PATH)
 
-# Step 4: Process documents if this is first run
+# Step 4: Prepare documents for indexing
+# Only prepare if we're creating the vector DB for the first time
+documents = []
 if add_documents:
-    documents = []
-    ids = []
     for i, row in df.iterrows():
-        # Combine title and review for better semantic context
-        # Create Document objects with content and searchable metadata
-        document = Document(
+        city = str(row["City"]).strip()
+        doc = Document(
             page_content=row["Title"] + " " + row["Review"],
-            metadata={"rating": row["Rating"], "date": row["Date"], "title": row["Title"]}
+            metadata={
+                "rating": float(row["Rating"]),
+                "date": str(row["Date"]),
+                "restaurant": row["Title"],
+                "city": city,
+                "state": str(row["State"]),
+                "categories": str(row["Categories"])
+            }
         )
-        ids.append(str(i))
-        documents.append(document)
+        documents.append(doc)
 
-
-# Step 5: Initialize or load the vector store
-vector_store = Chroma(
-    collection_name="restaurant_reviews",
-    persist_directory=db_location,
-    embedding_function=embeddings
-)
-
-# Step 6: Add documents to vector store if new database
+# Step 5: Create or load Chroma vector store
 if add_documents:
-    vector_store.add_documents(documents=documents, ids=ids)
-    vector_store.persist()  # Save vectors to disk
+    print(f"\U0001F4E6 Adding {len(documents)} documents to Chroma...")
+    vector_store = Chroma.from_documents(
+        documents=documents,
+        embedding=embeddings,
+        collection_name="restaurant_reviews",
+        persist_directory=DB_PATH
+    )
+    print("\u2705 Vector store creation complete.")
+else:
+    vector_store = Chroma(
+        collection_name="restaurant_reviews",
+        persist_directory=DB_PATH,
+        embedding_function=embeddings
+    )
 
-# Step 7: Create and expose the retriever interface
-# This is the main integration point with main.py
-retriever = vector_store.as_retriever(
-    search_kwargs={"k": 5}  # Return top 5 most relevant results
-)
+# Step 6: Retriever access function
+def get_retriever(city=None):
+    """
+    Returns a retriever for semantically searching pizza reviews.
+    Optionally filters results by city name (as found in the metadata).
 
+    Args:
+        city (str): Name of the city to filter by (e.g., "Tel Aviv")
 
-
-
+    Returns:
+        BaseRetriever: LangChain-compatible retriever object
+    """
+    search_kwargs = {"k": 10}
+    if city:
+        search_kwargs["filter"] = {"city": city.strip()}
+    return vector_store.as_retriever(search_kwargs=search_kwargs)

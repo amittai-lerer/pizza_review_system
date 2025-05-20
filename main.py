@@ -1,95 +1,109 @@
 """
-Pizza Restaurant Review Analysis System
-=====================================
+Israeli Pizza Review Q&A System
+==============================
 
-A question-answering system that analyzes pizza restaurant reviews using LangChain and Ollama.
-The system uses a local LLM to provide intelligent answers about restaurant reviews.
+A conversational system for exploring pizza restaurant reviews in Israeli cities using:
+- LangChain for semantic search and prompt chaining
+- Ollama (LLaMA 3.2) for local language model inference
+- ChromaDB for vector-based document retrieval
 
-System Components & Flow:
-1. Vector Store (vector.py):
-   - Loads reviews from CSV
-   - Creates embeddings using Ollama
-   - Stores vectors in ChromaDB for semantic search
+Workflow:
+---------
+1. Accept a natural language question from the user (e.g., "What's a good pizza place in Tel Aviv?").
+2. Use a local LLM to normalize city references to their canonical form (e.g., "TLV" → "Tel Aviv").
+3. Retrieve semantically relevant reviews from ChromaDB filtered by that city.
+4. Format and present those reviews to the LLM to generate a final answer.
 
-2. Main QA System (main.py):
-   - Uses Ollama LLM for text generation
-   - Retrieves relevant reviews using vector similarity
-   - Processes questions through a structured prompt
-   - Returns concise, relevant answers
-
-Technical Flow:
-1. User inputs a question
-2. Vector store finds relevant reviews (semantic search)
-3. Reviews are formatted and sent to LLM
-4. LLM generates a concise, contextual answer
-
-Requirements:
-- Ollama with llama3.2 model
-- langchain-ollama
-- langchain-core
-- ChromaDB for vector storage
+Supports reviews from:
+- Tel Aviv, Jerusalem, Haifa, Beer Sheva, Eilat
 """
 
 from langchain_ollama.llms import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
-from vector import retriever  # Custom vector store implementation
+from vector import get_retriever
 
-# Initialize Ollama LLM - This is our text generation engine
-model = OllamaLLM(model="llama3.2")
+# Step 1: City Normalization Prompt Chain
+rewrite_template = ChatPromptTemplate.from_template("""
+You are a city name normalizer. Your ONLY job is to output the canonical city name mentioned in the question.
 
-# Define how the AI should process questions and reviews
-# This template structures the AI's responses for consistency
-template = """
-You are a helpful assistant that can answer questions and help with tasks.
-You're an expert in the field of pizza restaurants.
+Rules:
+- Output ONLY the normalized city name. No quotes, no explanation.
+- If you find "TLV", "Tel Aviv-Jaffa", or variants → output "Tel Aviv".
+- If no city is found → return an empty string.
 
-Here are the relevant reviews I found:
+Examples:
+- "Where to eat in TLV?" → Tel Aviv
+- "Best pizza near Al-Quds?" → Jerusalem
+- "Pizza in haifa bay?" → Haifa
+
+Question: {question}
+""")
+
+
+# Step 2: Answer Prompt Chain Template
+answer_template = ChatPromptTemplate.from_template("""
+You are a helpful assistant answering questions based on pizza restaurant reviews in Israeli cities.
+
+Each review includes:
+- Restaurant name
+- City and state
+- Rating and date
+- Full review text
+
+Instructions:
+1. Recommend specific pizza places in the city mentioned.
+2. Use restaurant name and city.
+3. Mention why it's good (e.g., service, crust, taste).
+4. Be brief, clear, and informative.
+5. If no reviews for the city exist, say so.
+
+Here are the reviews:
 {reviews}
 
-Based on these reviews, please answer the following question: {question}
+Question: {question}
+""")
 
-Remember to:
-1. Only use information from the provided reviews
-2. If the reviews don't contain relevant information, say so
-3. Be specific and cite details from the reviews when possible
-4. answer short and concise
-"""
+# Step 3: Initialize Ollama LLM
+model = OllamaLLM(model="llama3.2")
 
-# Create prompt template for consistent AI interactions
-prompt = ChatPromptTemplate.from_template(template)
+# Step 4: Chain construction
+rewrite_chain = rewrite_template | model
+answer_chain = answer_template | model
 
-# Combine prompt and model into a processing chain
-# This creates our question-answering pipeline
-chain = prompt | model
+# Step 5: Main user loop
+if __name__ == "__main__":
+    while True:
+        question = input("\nPlease enter your pizza-related question (or 'q' to quit): ").strip()
+        if question.lower() == "q":
+            print("Goodbye! 🍕")
+            break
 
-# Main interaction loop
-while True:
-    print("\n\n\n--------------------------------")
-    question = input("Please enter your question: (or type q to quit) ")
-    print("--------------------------------\n\n\n")
-    if question == "q":
-        break
-    
-    # Step 1: Retrieve relevant reviews using semantic search
-    retrieved_docs = retriever.get_relevant_documents(question)
-    
-    # Step 2: Format reviews for the AI prompt
-    # Each review includes its content, rating, and date
-    formatted_reviews = "\n\n".join([
-        f"Review {i+1}:\n{doc.page_content}\nRating: {doc.metadata['rating']}\nDate: {doc.metadata['date']}"
-        for i, doc in enumerate(retrieved_docs)
-    ])
-    
-    print(f"📚 Found {len(retrieved_docs)} relevant reviews...")
-    
-    # Step 3: Process question through our AI chain
-    # The chain combines the reviews, question, and AI model
-    result = chain.invoke({
-                             "reviews": formatted_reviews if retrieved_docs else "No relevant reviews found.",
-                             "question": question
-    })
-    
-    # Step 4: Display the AI's response
-    print("\n🤖 Answer:")
-    print(result)
-    
+        # Normalize city using LLM
+        normalized_city = rewrite_chain.invoke({"question": question}).strip()
+        city = normalized_city if normalized_city else None
+
+        # Retrieve relevant documents using metadata filtering
+        retriever = get_retriever(city)
+        retrieved_docs = retriever.invoke(question)
+
+        # Format documents for the answer prompt
+        formatted_reviews = "\n\n".join([
+            f"Review {i+1}:\n"
+            f"Restaurant: {doc.metadata.get('restaurant', 'N/A')}\n"
+            f"City: {doc.metadata.get('city', 'N/A')}, State: {doc.metadata.get('state', '')}\n"
+            f"Categories: {doc.metadata.get('categories', '')}\n"
+            f"Rating: {doc.metadata['rating']}\n"
+            f"Date: {doc.metadata['date']}\n"
+            f"Review:\n{doc.page_content}"
+            for i, doc in enumerate(retrieved_docs)
+        ]) if retrieved_docs else "No relevant reviews found."
+
+        # Generate final answer
+        answer = answer_chain.invoke({
+            "reviews": formatted_reviews,
+            "question": question
+        })
+
+        print("\nAnswer:\n--------")
+        print(answer)
+        print("\n--------------------------------")
