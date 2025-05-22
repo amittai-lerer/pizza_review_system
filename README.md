@@ -1,3 +1,14 @@
+---
+title: Pizza Review RAG
+emoji: 🍕
+colorFrom: red
+colorTo: yellow
+sdk: streamlit
+app_file: app.py
+pinned: false
+---
+
+
 # Pizza Review Analysis System
 
 An advanced question-answering system for exploring pizza restaurant reviews using LangChain, ChromaDB, and local LLM inference through Ollama.
