@@ -66,7 +66,7 @@ python vector.py
 
 2. Start the interactive dashboard:
 ```bash
-streamlit run dashboard.py
+streamlit run app.py
 ```
 
 The dashboard provides:
@@ -83,7 +83,7 @@ Example questions:
 
 ## Project Structure
 
-- `dashboard.py`: Streamlit interface featuring:
+- `app.py`: Streamlit interface featuring:
   - Form-based query input
   - Styled answer display
   - Expandable review details
@@ -122,7 +122,7 @@ Example questions:
      - Location-specific recommendations
      - Natural, conversational tone
 
-### Dashboard (dashboard.py)
+### Dashboard (app.py)
 - Modern Streamlit interface with:
   - Form-based input handling
   - Real-time query processing
