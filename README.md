@@ -59,7 +59,7 @@ ollama pull llama3.2
 
 ## Data Structure
 
-The system uses a structured CSV format (`data/combined_reviews.csv`) with the following columns:
+The system uses a structured CSV format (`data/final_israel_pizza_reviews_realistic.csv`) with the following columns:
 - Title: Restaurant name
 - Review: Full review text
 - Rating: Numerical rating (float)
