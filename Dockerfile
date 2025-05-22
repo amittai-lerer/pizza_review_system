@@ -2,19 +2,19 @@ FROM python:3.10-slim
 
 WORKDIR /app
 
-# Copy everything including the app code and requirements
+# Copy project files
 COPY . /app
+COPY .streamlit /app/.streamlit
+
+# Set environment variable to avoid writing to root
+ENV XDG_CONFIG_HOME=/app/.streamlit
 
 # Install dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Ensure Streamlit config directory exists AND config file is copied
-RUN mkdir -p /app/.streamlit
-COPY .streamlit /app/.streamlit
-
-# Expose Streamlit's default port
+# Expose port
 EXPOSE 7860
 
-# Run the Streamlit app
+# Run the app
 CMD ["streamlit", "run", "app.py", "--server.port=7860", "--server.address=0.0.0.0"]
