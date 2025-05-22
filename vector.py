@@ -43,7 +43,7 @@ Usage:
 
 File Structure:
 --------------
-Expected data file: data/combined_reviews.csv
+Expected data file: data/final_israel_pizza_reviews_realistic.csv
 Vector store location: chroma_langchain_db/
 """
 
