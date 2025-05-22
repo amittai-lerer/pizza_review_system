@@ -54,7 +54,7 @@ import os
 import pandas as pd
 
 # Configuration Constants
-CSV_PATH = "data/combined_reviews.csv"
+CSV_PATH = CSV_PATH = "data/final_israel_pizza_reviews_realistic.csv"
 DB_PATH = "chroma_langchain_db"
 EMBEDDING_MODEL = "BAAI/bge-small-en-v1.5"
 COLLECTION_NAME = "restaurant_reviews"

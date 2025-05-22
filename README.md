@@ -111,7 +111,7 @@ Example questions:
   - City-filtered retrieval logic
 
 - `data/`: Contains review datasets
-  - `combined_reviews.csv`: Primary review data
+  - `final_israel_pizza_reviews_realistic.csv`: Primary review data
   
 - `chroma_langchain_db/`: Vector store directory (auto-generated)
 
