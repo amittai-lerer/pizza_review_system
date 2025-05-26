@@ -1,29 +1,17 @@
-# core.py
-"""
-Shared logic for pizza review Q&A system.
-This module handles:
-- LLM initialization
-- Prompt chains
-- Answer generation
-- Retrieval logic
-"""
-
-from langchain_ollama.llms import OllamaLLM
+# --- core.py ---
 from langchain_core.prompts import ChatPromptTemplate
 from vector import get_retriever
+from llm_loader import get_llm_response
 
-# --- Prompt for normalizing and rewriting the query ---
+import os
+
+# Prompt templates
 rewrite_template = ChatPromptTemplate.from_template("""
 You are a helpful assistant preparing a question for semantic search.
 
 Do TWO things:
 1. Normalize the city name (e.g., "TLV" → "Tel Aviv"). Return empty if no city is found.
 2. Rewrite the user's question as if it were a sentence from a review.
-
-Examples:
-- "Where to eat in TLV?" → City: Tel Aviv, Rewritten: The pizza in Tel Aviv was delicious and crispy.
-- "Best pizza near Al-Quds?" → City: Jerusalem, Rewritten: I had the best pizza near Jerusalem.
-- "Where can I find good crust?" → City: , Rewritten: The crust was crispy and perfectly baked.
 
 Return in this format:
 City: <normalized city>
@@ -32,19 +20,13 @@ Rewritten: <review-style version>
 Question: {question}
 """)
 
-# --- Prompt for generating the final answer ---
 answer_template = ChatPromptTemplate.from_template("""
 You are a helpful assistant answering questions about pizza restaurants in Israeli cities, based on real customer reviews.
 
-Your tone is friendly and natural — like you're giving useful advice to a friend. Stay on topic and answer only what the user asks.
-
 Instructions:
-- Focus on answering the specific question asked.
 - Add location to the answer.
 - Use only relevant information from the reviews.
 - Recommend 1–2 standout pizza places if appropriate.
-- Highlight what makes them great (crust, flavor, service, etc.) — but keep it concise.
-- Avoid listing every review or going off-topic.
 - If no relevant reviews exist, say so clearly and politely.
 
 Here are the reviews:
@@ -53,18 +35,29 @@ Here are the reviews:
 Question: {question}
 """)
 
-# --- Initialize the model and chains ---
-model = OllamaLLM(model="llama3.2")
-rewrite_chain = rewrite_template | model
-answer_chain = answer_template | model
+def get_answer_from_llm(prompt: str, mode: str) -> str:
+    """Wrapper to handle LLM response for answer generation"""
+    try:
+        return get_llm_response(prompt, mode=mode)
+    except Exception as e:
+        if mode == "local":
+            raise
+        return get_llm_response(prompt, mode="cloud")
 
-# --- Exposed function for both CLI and dashboard ---
-def get_pizza_answer(question: str) -> tuple[str, list]:
-    rewrite_output = rewrite_chain.invoke({"question": question})
+def get_pizza_answer(question: str, mode: str = "auto") -> tuple[str, list, str]:
+    try:
+        # LLM to rewrite query
+        rewrite_output = get_llm_response(rewrite_template.format(question=question), mode=mode)
+        used_mode = mode if mode != "auto" else "local"
+    except Exception as e:
+        if mode == "local":
+            raise
+        rewrite_output = get_llm_response(rewrite_template.format(question=question), mode="cloud")
+        used_mode = "cloud"
+
+    # Parse city and rewritten query
     lines = [line.strip() for line in rewrite_output.splitlines()]
-    city = ""
-    rewritten_query = ""
-
+    city, rewritten_query = "", ""
     for line in lines:
         if line.lower().startswith("city:"):
             city = line.split(":", 1)[1].strip()
@@ -85,9 +78,10 @@ def get_pizza_answer(question: str) -> tuple[str, list]:
         for i, doc in enumerate(docs)
     ]) if docs else "No relevant reviews found."
 
-    answer = answer_chain.invoke({
-        "reviews": formatted_reviews,
-        "question": question
-    })
+    # Get final answer using the same LLM mode
+    answer = get_answer_from_llm(
+        answer_template.format(reviews=formatted_reviews, question=question),
+        mode=used_mode
+    )
 
-    return answer, docs
+    return answer, docs, used_mode
