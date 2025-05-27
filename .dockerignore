@@ -1,0 +1,27 @@
+# Ignore Python junk
+__pycache__/
+*.py[cod]
+*.so
+
+# Ignore virtual envs
+.venv/
+env/
+venv/
+
+# Ignore logs
+*.log
+logs/
+
+# Ignore system junk
+.DS_Store
+
+# Ignore Git metadata
+.git/
+.gitignore
+
+# Ignore local config/secrets
+.env
+*.env
+
+# Ignore notebooks (if unused in production)
+*.ipynb
