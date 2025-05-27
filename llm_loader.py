@@ -15,7 +15,7 @@ from logger_config import setup_logger
 logger = setup_logger(name="llm", log_file="logs/llm.log")
 
 # --- Config ---
-LOCAL_MODEL = "llama3.2"
+LOCAL_MODEL = "llama3"
 LOCAL_PORT = 11434
 LOCAL_HOST = "ollama" if os.path.exists("/.dockerenv") else "localhost"
 CLOUD_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
@@ -74,6 +74,35 @@ def get_cloud_response(prompt: str) -> str:
     logger.debug(f"📥 Cloud response: {result}")
     return result
 
+# def get_llm_response(prompt: str, mode: str = "auto") -> str:
+#     """
+#     Unified LLM response function with optional mode.
+
+#     Args:
+#         prompt: The input prompt string.
+#         mode: 'local', 'cloud', or 'auto' (default: auto)
+
+#     Returns:
+#         The response from the LLM as a string.
+#     """
+#     logger.info(f"🔁 get_llm_response called [mode={mode}]")
+
+#     if mode == "cloud":
+#         return get_cloud_response(prompt)
+    
+#     if mode == "local":
+#         return get_local_response(prompt)
+
+#     # auto mode with fallback
+#     try:
+#         return get_local_response(prompt)
+#     except Exception as e:
+#         logger.warning(f"⚠️ Local LLM failed: {e}. Falling back to cloud.")
+#         return get_cloud_response(prompt)
+
+
+import os
+
 def get_llm_response(prompt: str, mode: str = "auto") -> str:
     """
     Unified LLM response function with optional mode.
@@ -85,17 +114,26 @@ def get_llm_response(prompt: str, mode: str = "auto") -> str:
     Returns:
         The response from the LLM as a string.
     """
+    # Allow Docker/container to override with LLM_MODE env
+    env_mode = os.getenv("LLM_MODE")
+    if env_mode:
+        logger.info(f"🌍 Overriding mode from env: {env_mode}")
+        mode = env_mode
+
     logger.info(f"🔁 get_llm_response called [mode={mode}]")
 
     if mode == "cloud":
         return get_cloud_response(prompt)
-    
+
     if mode == "local":
         return get_local_response(prompt)
 
-    # auto mode with fallback
+    # "auto" mode — try local, fallback only if not locked to local
     try:
         return get_local_response(prompt)
     except Exception as e:
+        if os.getenv("LLM_MODE") == "local":
+            logger.error("❌ Local LLM failed and cloud fallback is disabled in local-only mode.")
+            raise RuntimeError("Local LLM failed and cloud fallback is disabled.") from e
         logger.warning(f"⚠️ Local LLM failed: {e}. Falling back to cloud.")
         return get_cloud_response(prompt)

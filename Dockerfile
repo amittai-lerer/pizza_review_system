@@ -21,5 +21,7 @@ ENV STREAMLIT_BROWSER_GATHER_USAGE_STATS=false
 # Expose the default port
 EXPOSE 7860
 
+RUN mkdir -p /app/logs
+
 # Start Streamlit app
 CMD ["streamlit", "run", "app.py", "--server.port=7860", "--server.address=0.0.0.0", "--server.enableCORS=false"]
