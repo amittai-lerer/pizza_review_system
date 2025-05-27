@@ -2,23 +2,21 @@
 LLM Loader
 ==========
 
-Handles local/cloud LLM requests with fallback logic.
+Handles local LLM requests using Ollama.
 Simple, function-based design for consistency across codebase.
 """
 
 import os
 import requests
-import streamlit as st
 from logger_config import setup_logger
 
 # --- Logger ---
 logger = setup_logger(name="llm", log_file="logs/llm.log")
 
 # --- Config ---
-LOCAL_MODEL = "llama3.2"
+LOCAL_MODEL = "llama3:latest"
 LOCAL_PORT = 11434
 LOCAL_HOST = "ollama" if os.path.exists("/.dockerenv") else "localhost"
-CLOUD_MODEL = "meta-llama/Meta-Llama-3-8B-Instruct"
 TEMPERATURE = 0.7
 MAX_TOKENS = 256
 
@@ -42,60 +40,33 @@ def get_local_response(prompt: str) -> str:
     logger.info(f"💻 Requesting from local model '{LOCAL_MODEL}' at {LOCAL_HOST}:{LOCAL_PORT}")
     logger.debug(f"📤 Prompt to local: {prompt}")
 
-    response = requests.post(url, json=payload)
-    response.raise_for_status()
+    try:
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        result = response.json()["response"].strip()
+        logger.debug(f"📥 Local response: {result}")
+        return result
+    except requests.exceptions.ConnectionError:
+        error_msg = f"Could not connect to Ollama at {LOCAL_HOST}:{LOCAL_PORT}. Make sure Ollama is running and the model '{LOCAL_MODEL}' is installed."
+        logger.error(error_msg)
+        raise ConnectionError(error_msg)
+    except Exception as e:
+        error_msg = f"Error getting response from local LLM: {str(e)}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
 
-    result = response.json()["response"].strip()
-    logger.debug(f"📥 Local response: {result}")
-    return result
-
-def get_cloud_response(prompt: str) -> str:
-    """Send request to Hugging Face cloud model."""
-    url = f"https://api-inference.huggingface.co/models/{CLOUD_MODEL}"
-    headers = {
-        "Authorization": f"Bearer {st.secrets['HUGGINGFACE_API_TOKEN']}",
-        "Content-Type": "application/json"
-    }
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "temperature": TEMPERATURE,
-            "max_new_tokens": MAX_TOKENS
-        }
-    }
-
-    logger.info(f"☁️ Requesting from Hugging Face model '{CLOUD_MODEL}'")
-    logger.debug(f"📤 Prompt to cloud: {prompt}")
-
-    response = requests.post(url, headers=headers, json=payload)
-    response.raise_for_status()
-
-    result = response.json()[0]["generated_text"].strip()
-    logger.debug(f"📥 Cloud response: {result}")
-    return result
-
-def get_llm_response(prompt: str, mode: str = "auto") -> str:
+def get_llm_response(prompt: str, mode: str = "local") -> str:
     """
-    Unified LLM response function with optional mode.
+    Get response from local LLM.
 
     Args:
         prompt: The input prompt string.
-        mode: 'local', 'cloud', or 'auto' (default: auto)
+        mode: Only 'local' is supported
 
     Returns:
-        The response from the LLM as a string.
+        The response from the local LLM as a string.
     """
-    logger.info(f"🔁 get_llm_response called [mode={mode}]")
-
-    if mode == "cloud":
-        return get_cloud_response(prompt)
+    if mode != "local":
+        logger.warning(f"Mode '{mode}' not supported. Using local mode.")
     
-    if mode == "local":
-        return get_local_response(prompt)
-
-    # auto mode with fallback
-    try:
-        return get_local_response(prompt)
-    except Exception as e:
-        logger.warning(f"⚠️ Local LLM failed: {e}. Falling back to cloud.")
-        return get_cloud_response(prompt)
+    return get_local_response(prompt)
