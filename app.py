@@ -3,6 +3,8 @@ import streamlit as st
 from core import get_pizza_answer
 from llm_loader import is_running_in_docker
 
+# st.set_option("server.fileWatcherType", "none")
+
 # --- Page Setup ---
 st.set_page_config(page_title="🍕 Israeli Pizza Recommender", layout="centered")
 st.title("🍕 Ask Me About Pizza in Israel!")
