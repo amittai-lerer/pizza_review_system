@@ -8,179 +8,256 @@ app_file: app.py
 pinned: false
 ---
 
-# 🍕 Pizza Review Analysis System
+# 🍕 Advanced NLP-Powered Pizza Review Analysis System
 
-An intelligent question-answering system for exploring Israeli pizza restaurant reviews, powered by LangChain, ChromaDB, and dual LLM support (local Ollama and cloud Hugging Face).
+A sophisticated Natural Language Processing system that leverages Large Language Models (LLMs), vector embeddings, and semantic search to provide intelligent analysis of Israeli pizza restaurant reviews. Built with modern software engineering practices and a clean, production-ready architecture.
 
-## ✨ Features
+---
 
-- **Smart Search**
-  - Semantic search with BAAI/bge-small-en-v1.5 embeddings
-  - Intelligent query rewriting and normalization
-  - City-aware filtering with name standardization
+## 📊 Project Highlights
 
-- **Dual LLM Architecture**
-  - Primary: Local Llama 3.2 via Ollama
-  - Fallback: Cloud-based LLaMA via Hugging Face
-  - Automatic failover mechanism
+- Semantic search across user reviews of Israeli pizzerias
+- Intelligent Q&A using LangChain + Ollama + ChromaDB
+- Modular architecture with full logging and docker support
+- Fully local LLM inference using `llama3` via Ollama
 
-- **Modern Interface**
-  - Clean Streamlit dashboard
-  - Real-time response display
-  - Expandable review details
-  - Environment-aware configuration
+---
 
-- **Robust Infrastructure**
-  - Comprehensive logging system
-  - Persistent vector storage
-  - Docker support with auto-detection
-  - Centralized configuration
+## 🔎 Technologies Used
 
-## 🚀 Quick Start
+| Layer       | Tool / Lib                        |
+|-------------|-----------------------------------|
+| LLM         | [Ollama](https://ollama.com) + LangChain |
+| Vector DB   | ChromaDB                          |
+| UI          | Streamlit                         |
+| Embeddings  | BAAI/bge-small-en-v1.5 (HF)       |
+| Logging     | Python logger w/ file output      |
+| Packaging   | Docker, Docker Compose            |
 
-### Prerequisites
+---
 
-```bash
-# Required
-- Python 3.8+
-- Ollama (with llama3.2 model)
-- Hugging Face API token
-- 2GB+ free disk space
-
-# Optional
-- Docker & Docker Compose (for containerized deployment)
-```
-
-### Installation
-
-1. Clone and setup:
-```bash
-git clone <your-repo-url>
-cd pizza_review_system
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
-
-2. Configure environment:
-```bash
-# Install Ollama model
-ollama pull llama3.2
-
-# Create .streamlit/secrets.toml
-mkdir -p .streamlit
-echo "HUGGINGFACE_API_TOKEN = 'your-token-here'" > .streamlit/secrets.toml
-```
-
-3. Run the app:
-```bash
-streamlit run app.py
-```
-
-### Docker Deployment
-
-```bash
-docker-compose up --build
-```
-
-## 🏗️ Architecture
-
-### Core Components
+## 📊 Folder Structure
 
 ```
 pizza_review_system/
 ├── app.py              # Streamlit interface
-├── core.py            # Query processing & answer generation
-├── vector.py          # Vector store & retrieval
-├── llm_loader.py      # LLM integration & fallback
-├── logger_config.py   # Centralized logging
-├── data/              # Review datasets
-├── logs/              # Application logs
-└── docker/            # Container configuration
+├── core.py             # Prompt logic, LLM calls, city extraction
+├── vector.py           # Vector store loading & query interface
+├── logger_config.py    # Logging config shared across modules
+├── data/               # Contains review CSV file
+├── logs/               # Output logs (app.log, vector.log, etc.)
+├── Dockerfile          # Container build instructions
+├── docker-compose.yml  # Optional container orchestrator
+├── requirements.txt    # Python dependencies
+├── README.md           # You're here.
 ```
 
-### Key Modules
+---
 
-1. **Query Processing** (`core.py`)
-   - Question analysis
-   - City extraction
-   - Query rewriting
-   - Answer generation
+## 💪 Features
 
-2. **Vector Store** (`vector.py`)
-   - Document embedding
-   - Semantic search
-   - City-based filtering
-   - Metadata management
+### ✅ Smart LLM Prompting
+- Rewrites user questions into semantic search queries
+- Extracts & normalizes city names ("TLV" → "Tel Aviv")
+- Ensures consistent prompt format for reliable LLM use
 
-3. **LLM Integration** (`llm_loader.py`)
-   - Local model integration
-   - Cloud fallback mechanism
-   - Error handling
-   - Response processing
+### ✅ Vector-Based Retrieval
+- Fast semantic search via ChromaDB
+- Filters by city metadata
+- Uses Hugging Face embeddings for similarity
 
-4. **Logging System** (`logger_config.py`)
-   - Structured logging
-   - File & console output
-   - Debug/Info/Warning levels
-   - Emoji-enhanced readability
+### ✅ Clean UI in Streamlit
+- Single input for user queries
+- Expandable review results
+- Annotated answers with context
 
-## 📝 Usage Examples
+### ✅ Logging & Debugging
+- File + terminal logging (e.g., `logs/app.log`)
+- Detailed trace of rewrite, filter, query, and LLM call
 
-```python
-# Basic question
-"What are the best pizza places in Tel Aviv?"
+---
 
-# Specific criteria
-"Where can I find authentic New York style pizza in Jerusalem?"
+## 🚀 Setup Instructions
 
-# General inquiry
-"Tell me about kosher pizza options near the beach"
+```bash
+# Clone the project
+git clone https://github.com/amittai-lerer/pizza_review_system.git
+cd pizza_review_system
+
+# Set up environment
+python -m venv venv
+source venv/bin/activate  # (Windows: venv\Scripts\activate)
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-## 📊 Logging
+### 🫠 Run Ollama LLM Locally
+```bash
+# Make sure you have Ollama installed (https://ollama.com/download)
+ollama pull llama3
+ollama run llama3
+```
 
-The system maintains detailed logs in two locations:
-- `logs/app.log`: General application events
-- `logs/llm.log`: LLM interactions and responses
+### 🌐 Run Streamlit App
+```bash
+streamlit run app.py
+```
 
-Log levels:
-- `INFO`: Normal operations
-- `DEBUG`: Detailed processing info
-- `WARNING`: Non-critical issues
-- `ERROR`: Critical problems
+Open the browser at [http://localhost:8501](http://localhost:8501)
 
-## 🔧 Troubleshooting
+---
 
-### LLM Issues
-1. Local Model (Ollama)
-   - Verify Ollama is running: `ollama list`
-   - Check model installation: `ollama pull llama3.2`
-   - Monitor logs: `logs/llm.log`
+## 💡 Sample Queries
+```text
+Best pizza in TLV?
+What are top Neapolitan pizza places?
+Which pizzeria in Jerusalem has spicy toppings?
+Who has the best pizza crust?
+```
 
-2. Cloud Fallback
-   - Verify API token in `.streamlit/secrets.toml`
-   - Check network connectivity
-   - Monitor rate limits
+---
 
-### Vector Store
-1. Initialization
-   - Ensure sufficient disk space
-   - Check file permissions
-   - Verify data file format
+## 🌟 License
 
-2. Performance
-   - Monitor memory usage
-   - Check index size
-   - Verify embedding quality
+This project is licensed under the MIT License.
 
-## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
 
-## 📄 License
 
-MIT License - See LICENSE file for details 
+
+
+
+
+
+--------------
+
+
+
+
+---
+title: Pizza Review RAG
+emoji: 🍕
+colorFrom: red
+colorTo: yellow
+sdk: streamlit
+app_file: app.py
+pinned: false
+---
+
+# 🍕 Pizza Review RAG – AI-Powered Pizza Discovery in Israel
+
+This is a full-stack, AI-driven system that allows users to ask natural language questions about pizza in Israeli cities, powered by local LLMs, vector search, and intelligent prompt rewriting.
+
+Built with production-ready architecture, clear modular design, and fully local inference using [Ollama](https://ollama.com), this project demonstrates advanced use of LangChain, Streamlit, and ChromaDB.
+
+---
+
+## 🚀 Demo
+![App Screenshot](docs/screenshot.png) <!-- Add your own image or gif here -->
+
+---
+
+## 🌐 Tech Stack Overview
+
+| Layer     | Tools / Technologies                     |
+|-----------|------------------------------------------|
+| LLM       | `llama3.2` via Ollama                    |
+| Prompting | LangChain + `ChatPromptTemplate`         |
+| Vector DB | ChromaDB + HuggingFace Embeddings        |
+| Backend   | Python + modular `core.py`, `vector.py`  |
+| Frontend  | Streamlit                                |
+| Logging   | Custom file+console logger               |
+
+---
+
+## 📊 Architecture
+
+```
+pizza_review_system/
+├── app.py              # Streamlit interface
+├── core.py             # Rewriting + LLM answering
+├── vector.py           # Embedding + retrieval logic
+├── logger_config.py    # Shared logging utility
+├── data/               # Source CSV reviews
+├── logs/               # app.log, vector.log, etc.
+├── Dockerfile          # App container
+├── docker-compose.yml  # LLM + App stack
+├── requirements.txt    # All dependencies
+└── README.md           # You're here
+```
+
+### Core Components
+
+- **`core.py`**
+  - Extracts cities from natural language queries (e.g., "TLV" → "Tel Aviv")
+  - Rewrites vague questions into review-style prompts
+  - Uses LangChain chains + `OllamaLLM` locally
+
+- **`vector.py`**
+  - Loads reviews from CSV into ChromaDB
+  - Embeds using `BAAI/bge-small-en-v1.5`
+  - Supports filtering by `city` metadata
+
+- **`app.py`**
+  - Single input form via Streamlit
+  - Handles query, result display, and LLM output
+  - Expands results, shows raw reviews used
+
+---
+
+## 🛠 Setup Instructions
+
+### 1. Clone and Install
+```bash
+git clone <your-repo-url>
+cd pizza_review_system
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+### 2. Start Ollama and Pull the Model
+```bash
+ollama pull llama3
+ollama run llama3
+```
+
+### 3. Start the App
+```bash
+streamlit run app.py
+```
+
+Then visit: [http://localhost:8501](http://localhost:8501)
+
+---
+
+## 🔎 Example Queries
+
+```text
+Best pizza crust in TLV?
+Authentic Neapolitan pizza in JLM?
+Who serves the spiciest toppings in Haifa?
+Where can I get wood-fired pizza?
+```
+
+---
+
+## 🚧 Engineering Highlights
+
+- ✅ Rewrites natural language to search-friendly prompts
+- ✅ Extracts + normalizes cities (e.g., TLV → Tel Aviv)
+- ✅ Uses vector similarity search for smart retrieval
+- ✅ Entirely local inference via Ollama
+- ✅ Logs all actions to `logs/`
+- ✅ Modular, extendable architecture
+
+
+---
+
+## 🔒 License
+
+MIT License. See [LICENSE](LICENSE) for full terms.
+
+---
+
