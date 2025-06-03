@@ -11,7 +11,36 @@ import os
 logger = setup_logger(name="core", log_file="logs/core.log")
 
 # --- Load Local LLM ---
-llm = OllamaLLM(model="llama3.2")
+model_name = "llama3.2"
+
+import requests
+import time
+
+def wait_for_ollama(url="http://ollama:11434", timeout=30):
+    for i in range(timeout):
+        try:
+            r = requests.get(f"{url}/api/tags")
+            if r.status_code == 200:
+                print("✅ Ollama is ready.")
+                return
+        except Exception:
+            pass
+        print(f"⏳ Waiting for Ollama... ({i+1}/{timeout})")
+        time.sleep(1)
+    raise RuntimeError("❌ Ollama did not become ready in time.")
+
+
+
+
+
+if os.path.exists("/.dockerenv"):
+    logger.info(f"Running inside Docker. Connecting to Ollama at http://ollama:11434 using model '{model_name}'")
+    wait_for_ollama("http://ollama:11434")
+    llm = OllamaLLM(model="llama3", base_url="http://ollama:11434")
+else:
+    logger.info(f"Running locally. Connecting to Ollama at localhost using model '{model_name}'")
+    llm = OllamaLLM(model=model_name)
+
 
 # --- Prompt Templates ---
 # Template that instructs the LLM to extract and normalize city names and rewrite vague questions.
