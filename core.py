@@ -3,15 +3,33 @@
 
 from langchain_ollama.llms import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai import ChatOpenAI
 from vector import get_retriever
 from logger_config import setup_logger
+from dotenv import load_dotenv
 import os
+
+
+
+load_dotenv()
+print(os.getenv("FIREWORKS_API_KEY"))
 
 # --- Setup logger ---
 logger = setup_logger(name="core", log_file="logs/core.log")
 
-# --- Load Local LLM ---
-llm = OllamaLLM(model="llama3.2")
+# --- toggle LLM Loader ---
+def load_llm(use_cloud_llm: bool = False):
+    """Load either a local Ollama model or Together AI cloud model based on toggle."""
+    if use_cloud_llm:
+        logger.info("🧠 Using Together AI Cloud LLM")
+        return ChatOpenAI(
+            api_key=os.getenv("TOGETHER_API_KEY"),
+            base_url="https://api.together.xyz/v1",
+            model=os.getenv("TOGETHER_MODEL", "meta-llama/Llama-3.3-70B-Instruct-Turbo-Free")
+        )
+    else:
+        logger.info("🧠 Using Local Ollama LLM")
+        return OllamaLLM(model="llama3.2")
 
 # --- Prompt Templates ---
 # Template that instructs the LLM to extract and normalize city names and rewrite vague questions.
@@ -69,17 +87,16 @@ Here are the reviews:
 Question: {question}
 """)
 
-# --- Chains ---
-# LangChain prompt pipelines for rewrite and answer generation
-rewrite_chain = rewrite_template | llm
-answer_chain = answer_template | llm
+
 
 # --- Core Functions ---
-def rewrite_and_extract_city(question: str) -> tuple[str, str]:
+def rewrite_and_extract_city(question: str, rewrite_chain) -> tuple[str, str]:
     """Rewrite the user's question and extract the normalized city name if present."""
     logger.info(f"🔁 Rewriting question: {question}")
-    output = rewrite_chain.invoke({"question": question})
-    logger.info(f"✅ LLM rewrite output:\n{output}")
+    
+    # Compatible with both AIMessage and plain strings
+    result = rewrite_chain.invoke({"question": question})
+    output = result.content if hasattr(result, "content") else str(result)
 
     city, rewritten = "", ""
     for line in output.splitlines():
@@ -92,6 +109,7 @@ def rewrite_and_extract_city(question: str) -> tuple[str, str]:
     logger.info(f"🏩 Parsed city: {city or '[None]'}")
     logger.info(f"✍️ Rewritten query: {rewritten}")
     return city, rewritten
+
 
 def format_reviews(docs: list) -> str:
     """Format retrieved documents for inclusion in the final prompt."""
@@ -109,18 +127,24 @@ def format_reviews(docs: list) -> str:
         for i, doc in enumerate(docs)
     ])
 
-def get_pizza_answer(question: str) -> tuple[str, list]:
-    """Main handler that processes a user question and returns the final LLM-generated answer."""
-    logger.info("🚀 Handling new pizza question")
-    city, rewritten_query = rewrite_and_extract_city(question)
+def get_pizza_answer(question: str, use_cloud_llm: bool = False) -> tuple[str, list]:
+    logger.info("-------------- 🚀 Handling new pizza question --------------")
 
-    logger.info(f"🔍 Retrieving docs for: '{rewritten_query}' (city={city or 'Any'})")
+    llm = load_llm(use_cloud_llm)
+
+    # build chains  
+    rewrite_chain = rewrite_template | llm
+    answer_chain = answer_template | llm
+
+    city, rewritten_query = rewrite_and_extract_city(question, rewrite_chain)
+
     retriever = get_retriever(city or None)
     docs = retriever.invoke(rewritten_query)
 
     reviews = format_reviews(docs)
     logger.info("🧠 Calling LLM to generate answer")
     answer = answer_chain.invoke({"reviews": reviews, "question": question})
+    answer_text = answer.content if hasattr(answer, "content") else str(answer)
 
     logger.info("✅ Answer ready")
-    return answer, docs
+    return answer_text, docs
