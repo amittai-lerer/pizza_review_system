@@ -10,16 +10,17 @@ pinned: false
 
 # 🍕 Advanced NLP-Powered Pizza Review Analysis System
 
-A sophisticated Natural Language Processing system that leverages Large Language Models (LLMs), vector embeddings, and semantic search to provide intelligent analysis of Israeli pizza restaurant reviews. Built with modern software engineering practices and a clean, production-ready architecture.
+A sophisticated Natural Language Processing system that leverages Large Language Models (LLMs), vector embeddings, and semantic search to provide intelligent analysis of Israeli pizza restaurant reviews. Built with modern software engineering practices and a clean, production-ready architecture using Docker Compose.
 
 ---
 
 ## 📊 Project Highlights
 
-- Semantic search across user reviews of Israeli pizzerias
-- Intelligent Q&A using LangChain + Ollama + ChromaDB
-- Modular architecture with full logging and docker support
-- Fully local LLM inference using `llama3` via Ollama
+- Semantic search across user reviews of Israeli pizzerias.
+- Intelligent Q&A using LangChain + Ollama (`llama3`) + ChromaDB.
+- Modular Python architecture with comprehensive logging.
+- Fully containerized with Docker Compose for easy setup and consistent environments.
+- Entirely local LLM inference ensuring privacy and speed.
 
 ---
 
@@ -27,12 +28,12 @@ A sophisticated Natural Language Processing system that leverages Large Language
 
 | Layer       | Tool / Lib                        |
 |-------------|-----------------------------------|
-| LLM         | [Ollama](https://ollama.com) + LangChain |
+| LLM         | [Ollama](https://ollama.com) (`llama3` model) + LangChain |
 | Vector DB   | ChromaDB                          |
 | UI          | Streamlit                         |
-| Embeddings  | BAAI/bge-small-en-v1.5 (HF)       |
-| Logging     | Python logger w/ file output      |
-| Packaging   | Docker, Docker Compose            |
+| Embeddings  | BAAI/bge-small-en-v1.5 (Hugging Face) |
+| Logging     | Python `logging` module (file & console output) |
+| Packaging   | Docker & Docker Compose           |
 
 ---
 
@@ -40,75 +41,118 @@ A sophisticated Natural Language Processing system that leverages Large Language
 
 ```
 pizza_review_system/
-├── app.py              # Streamlit interface
-├── core.py             # Prompt logic, LLM calls, city extraction
-├── vector.py           # Vector store loading & query interface
-├── logger_config.py    # Logging config shared across modules
-├── data/               # Contains review CSV file
-├── logs/               # Output logs (app.log, vector.log, etc.)
-├── Dockerfile          # Container build instructions
-├── docker-compose.yml  # Optional container orchestrator
-├── requirements.txt    # Python dependencies
-├── README.md           # You're here.
+├── app.py              # Streamlit User Interface
+├── core.py             # Core logic: prompt engineering, LLM interaction, city extraction
+├── vector.py           # Vector store management (ChromaDB loading & querying)
+├── logger_config.py    # Shared logging configuration utility
+├── data/               # Contains the source CSV review dataset
+├── logs/               # Directory for output logs (e.g., app.log, core.log)
+├── Dockerfile          # Instructions to build the Streamlit application container
+├── docker-compose.yml  # Defines and orchestrates the multi-container application (Streamlit app + Ollama)
+├── requirements.txt    # Python dependencies for the Streamlit application
+├── .dockerignore       # Specifies intentionally untracked files for Docker build context
+└── README.md           # This file: project overview and instructions
 ```
 
 ---
 
 ## 💪 Features
 
-### ✅ Smart LLM Prompting
-- Rewrites user questions into semantic search queries
-- Extracts & normalizes city names ("TLV" → "Tel Aviv")
-- Ensures consistent prompt format for reliable LLM use
+### ✅ Smart LLM Prompting & Interaction
+- Dynamically rewrites user questions into effective semantic search queries.
+- Accurately extracts and normalizes city names (e.g., "TLV" is understood as "Tel Aviv").
+- Utilizes LangChain for robust and structured communication with the LLM.
 
-### ✅ Vector-Based Retrieval
-- Fast semantic search via ChromaDB
-- Filters by city metadata
-- Uses Hugging Face embeddings for similarity
+### ✅ Vector-Based Retrieval with ChromaDB
+- Achieves fast and relevant semantic search over reviews using vector embeddings.
+- Supports filtering of search results by city metadata for targeted information.
+- Employs Hugging Face embeddings (`BAAI/bge-small-en-v1.5`) for semantic similarity.
 
-### ✅ Clean UI in Streamlit
-- Single input for user queries
-- Expandable review results
-- Annotated answers with context
+### ✅ Interactive UI with Streamlit
+- Provides a clean, single-input interface for user queries.
+- Displays LLM-generated answers clearly.
+- Allows users to expand results to see the specific reviews used for context.
 
-### ✅ Logging & Debugging
-- File + terminal logging (e.g., `logs/app.log`)
-- Detailed trace of rewrite, filter, query, and LLM call
+### ✅ Comprehensive Logging & Debugging
+- Outputs logs to both files (e.g., `logs/app.log`, `logs/core.log`) and the console.
+- Offers a detailed trace of the entire process: query rewrite, city filtering, vector search, and LLM calls.
 
 ---
 
-## 🚀 Setup Instructions
+## 🚀 Setup and Run with Docker Compose (Recommended)
 
+This is the easiest and most reliable way to run the application, as it manages both the Streamlit app and the Ollama LLM service in isolated, consistent environments.
+
+**Prerequisites:**
+- Docker Desktop (or Docker Engine + Docker Compose CLI) installed and running.
+
+**Instructions:**
+
+1.  **Clone the Project:**
+    ```bash
+    git clone https://github.com/amittai-lerer/pizza_review_system.git
+    cd pizza_review_system
+    ```
+
+2.  **Build and Start the Services:**
+    This command will build the `pizza-app` image using the `Dockerfile` and pull the official `ollama/ollama` image. It then starts both services in detached mode.
+    ```bash
+    docker-compose up --build -d
+    ```
+
+3.  **Pull the LLM Model into Ollama:**
+    After the services are up (especially the `ollama` service), you need to pull the `llama3` model into the Ollama container. This is a one-time setup per model unless the Ollama volume is removed.
+    ```bash
+    docker-compose exec ollama ollama pull llama3
+    ```
+    You can check available models inside Ollama with `docker-compose exec ollama ollama list`.
+
+4.  **Access the Streamlit App:**
+    Open your web browser and navigate to:
+    [http://localhost:7860](http://localhost:7860)
+
+**To Stop the Services:**
 ```bash
-# Clone the project
-git clone https://github.com/amittai-lerer/pizza_review_system.git
-cd pizza_review_system
-
-# Set up environment
-python -m venv venv
-source venv/bin/activate  # (Windows: venv\Scripts\activate)
-
-# Install dependencies
-pip install -r requirements.txt
+docker-compose down
 ```
 
-### 🫠 Run Ollama LLM Locally
-```bash
-# Make sure you have Ollama installed (https://ollama.com/download)
-ollama pull llama3
-ollama run llama3
-```
+---
 
-### 🌐 Run Streamlit App
-```bash
-streamlit run app.py
-```
+## 🧑‍💻 Local Development Setup (Alternative)
 
-Open the browser at [http://localhost:8501](http://localhost:8501)
+If you prefer to run the Streamlit app directly on your host machine for development (e.g., for faster iteration on UI changes), you can follow these steps. You'll still need Ollama running (either locally or via Docker).
+
+1.  **Clone the Project** (if not already done):
+    ```bash
+    git clone https://github.com/amittai-lerer/pizza_review_system.git
+    cd pizza_review_system
+    ```
+
+2.  **Set Up Python Virtual Environment:**
+    ```bash
+    python -m venv venv
+    source venv/bin/activate  # On Windows: venv\Scripts\activate
+    pip install -r requirements.txt
+    ```
+
+3.  **Ensure Ollama is Running and `llama3` is Available:**
+    You can run Ollama directly on your host machine (see [Ollama download](https://ollama.com/download)) or keep the Ollama service from `docker-compose.yml` running (`docker-compose up -d ollama`).
+    Make sure the `llama3` model is pulled:
+    ```bash
+    ollama pull llama3 # If Ollama is running locally on host
+    # or docker-compose exec ollama ollama pull llama3 # If using Ollama via Docker Compose
+    ```
+
+4.  **Run the Streamlit App Locally:**
+    ```bash
+    streamlit run app.py
+    ```
+    The app will typically be available at `http://localhost:8501` (Streamlit's default port when run this way).
 
 ---
 
 ## 💡 Sample Queries
+
 ```text
 Best pizza in TLV?
 What are top Neapolitan pizza places?

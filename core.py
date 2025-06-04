@@ -10,7 +10,14 @@ import os
 # --- Setup logger ---
 logger = setup_logger(name="core", log_file="logs/core.log")
 
+# --- Determine Ollama Base URL ---
+# If running in Docker, use the service name 'ollama'. Otherwise, use 'localhost'.
+OLLAMA_HOST = "ollama" if os.path.exists("/.dockerenv") else "localhost"
+OLLAMA_BASE_URL = f"http://{OLLAMA_HOST}:11434"
+logger.info(f"🤖 Ollama base URL set to: {OLLAMA_BASE_URL}")
+
 # --- Load Local LLM ---
+<<<<<<< HEAD
 model_name = "llama3.2"
 
 import requests
@@ -41,10 +48,14 @@ else:
     logger.info(f"Running locally. Connecting to Ollama at localhost using model '{model_name}'")
     llm = OllamaLLM(model=model_name)
 
+=======
+# Explicitly set the base_url for Ollama
+llm = OllamaLLM(model="llama3", base_url=OLLAMA_BASE_URL) # Changed model to llama3 as discussed for Ollama
+>>>>>>> 2540596 (add Docker Compose, refactor code, update README)
 
 # --- Prompt Templates ---
 # Template that instructs the LLM to extract and normalize city names and rewrite vague questions.
-rewrite_template = ChatPromptTemplate.from_template("""
+rewrite_template = ChatPromptTemplate.from_template('''
 You are a helpful assistant preparing a user query for semantic search on pizza reviews.
 
 Your job has TWO steps:
@@ -59,30 +70,30 @@ Your job has TWO steps:
 
 Return your response **exactly** like this (no extra text):
 
-City: <Tel Aviv / Jerusalem / Haifa / no city found>  
+City: <Tel Aviv / Jerusalem / Haifa / no city found>
 Rewritten: <review-style sentence>
 
 Here are examples:
 
 ---
-Question: Where can I find good pizza in TLV?  
-City: Tel Aviv  
+Question: Where can I find good pizza in TLV?
+City: Tel Aviv
 Rewritten: I found amazing pizza in Tel Aviv.
 
-Question: I want the crispiest pizza crust.  
-City: no city found  
+Question: I want the crispiest pizza crust.
+City: no city found
 Rewritten: I'm looking for pizza places with the crispiest crust.
 
-Question: Best pizza in JLM?  
-City: Jerusalem  
+Question: Best pizza in JLM?
+City: Jerusalem
 Rewritten: I had the best pizza experience in Jerusalem.
 
-Now process this:  
+Now process this:
 Question: {question}
-""")
+''')
 
 # Template for final response generation using retrieved reviews
-answer_template = ChatPromptTemplate.from_template("""
+answer_template = ChatPromptTemplate.from_template('''
 You are a helpful assistant answering questions about pizza restaurants in Israeli cities,
 based on real customer reviews.
 
@@ -96,7 +107,7 @@ Here are the reviews:
 {reviews}
 
 Question: {question}
-""")
+''')
 
 # --- Chains ---
 # LangChain prompt pipelines for rewrite and answer generation

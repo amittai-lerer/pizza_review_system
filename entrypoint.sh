@@ -1,10 +1,33 @@
-#!/bin/bash
+services:
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434" # Host port:Container port
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks: # Add ollama service to the network
+      - pizza_network
 
-echo "🚀 Starting Ollama server..."
-ollama serve --host=0.0.0.0 &
+  pizza-app:
+    build: .
+    depends_on:
+      ollama:
+        condition: service_healthy
+    ports:
+      - "7860:7860" # Host port:Container port
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks: # Add pizza-app service to the network
+      - pizza_network
 
-# Wait a few seconds for the Ollama server to start
-sleep 3
+volumes:
+  ollama-data:
 
-echo "🎯 Launching Streamlit app..."
-exec streamlit run app.py --server.port=7860 --server.address=0.0.0.0
+networks: # Define the network
+  pizza_network:
+    driver: bridge

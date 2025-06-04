@@ -1,0 +1,52 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python virtual environment
+venv/
+.venv/
+env/
+.env/
+*/activate
+
+# Python bytecode and cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.so
+*.egg
+
+# Local databases / Vector stores (should be managed by volumes if needed, not part of image)
+chroma_langchain_db/
+
+# Log files (if you don't want development logs in the image)
+logs/
+*.log
+
+# Docker specific
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Secrets (if any, though .streamlit/secrets.toml is usually for runtime)
+# .streamlit/secrets.toml # Be careful if this is needed during build vs runtime
+
+# Other
+*.bak
+*.swp
