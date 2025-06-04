@@ -242,8 +242,6 @@ pizza_review_system/
 * Tracks rewrite steps, LLM calls, parsed results, and user queries
 * Logs to both file (`logs/app.log`) and console
 
----
-
 ## 🚀 Setup Instructions
 
 ### 1. Clone & Install
@@ -256,61 +254,89 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-2. 🔐 Add Secrets for Cloud Model (Optional)
+---
 
-To use the Together AI model, create a file at:
+### 2. 🔐 Add Secrets for Cloud Model (Optional)
 
-.streamlit/secrets.toml
+To use the Together AI model, create a file:
+
+```bash
+mkdir -p .streamlit
+nano .streamlit/secrets.toml
+```
 
 Add your API key:
 
+```toml
 TOGETHER_API_KEY = "your-together-api-key"
+```
 
-⚠️ This file is already excluded from version control via .gitignore.
+> ⚠️ This file is excluded from version control by `.gitignore`
 
-3. 🧠 Run Ollama Locally (Optional)
+---
 
-If you prefer local LLM inference:
+### 3. 🧠 Run Ollama Locally (Optional)
 
+```bash
 ollama pull llama3
 ollama run llama3
+```
 
-4. 🚀 Launch the App
+---
 
+### 4. 🚀 Launch the App
+
+```bash
 streamlit run app.py
+```
 
-Open your browser to: http://localhost:8501
+Then open your browser at: [http://localhost:8501](http://localhost:8501)
 
-💬 Example Queries
+---
 
+## 💬 Example Queries
+
+```text
 Best pizza in TLV?
 Spiciest toppings in Haifa?
 Authentic Neapolitan pizza in JLM?
 Where to find gluten-free pizza in Holon?
 Top-rated places for pizza crust?
+```
 
-🧪 Cloud Model Integration (Optional)
+---
 
-If using Together AI:
+## 🧪 Cloud Model Integration (Optional)
 
-Ensure TOGETHER_API_KEY is set in .streamlit/secrets.toml
+* Ensure `TOGETHER_API_KEY` is set in `.streamlit/secrets.toml`
+* The app automatically switches to Together AI when enabled via the UI toggle
+* Default model:
 
-The app will automatically switch to Together AI when enabled
+```text
+meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+```
 
-Default model:meta-llama/Llama-3.3-70B-Instruct-Turbo-Free
+---
 
-🐳 Docker Support (Optional)
+## 🐳 Docker Support (Optional)
 
-To build and run the app in a container:
+**Build and run the app in a container:**
 
+```bash
 docker build -t pizza-review .
 docker run -p 8501:8501 pizza-review
+```
 
-Or use Docker Compose:
+**Or use Docker Compose:**
 
+```bash
 docker-compose up
+```
 
-📜 License
+---
 
-MIT License — freely usable for educational or portfolio purposes.
+## 📜 License
 
+MIT License — Freely usable for educational, demo, or portfolio purposes.
+
+---
