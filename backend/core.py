@@ -4,7 +4,7 @@
 from langchain_ollama.llms import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
-from vector import get_retriever
+from backend.vector import get_retriever
 from logger_config import setup_logger
 from dotenv import load_dotenv
 import os
