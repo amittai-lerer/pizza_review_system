@@ -11,6 +11,7 @@ This project is a modular, production-grade Retrieval-Augmented Generation (RAG)
 * 🧠 **Prompt Rewriting**: Refines user queries to improve search and answer quality
 * 🖜️ **City Extraction**: Converts slang or abbreviations like `TLV` → `Tel Aviv`
 * 🔍 **Vector Search**: Uses ChromaDB with Hugging Face embeddings for fast semantic retrieval
+* 💾 **Smart Caching**: Semantic caching with TTL and hit tracking for faster responses
 * 🖥️ **Modern UI**: Streamlit frontend with FastAPI backend
 * 🐃 **Clean Backend API**: Modular FastAPI server for scalability and production-readiness
 * 🐳 **Docker Support**: Easy to containerize for deployment or portability
@@ -26,6 +27,7 @@ This project is a modular, production-grade Retrieval-Augmented Generation (RAG)
 | Embeddings | [BAAI/bge-small-en-v1.5](https://huggingface.co/BAAI/bge-small-en-v1.5)         |
 | Backend    | [FastAPI](https://fastapi.tiangolo.com)                                         |
 | Frontend   | [Streamlit](https://streamlit.io)                                               |
+| Caching    | SQLite, HuggingFace Embeddings                                                  |
 | Logging    | Python built-in logging module                                                  |
 | Container  | Docker, Docker Compose                                                          |
 
@@ -41,6 +43,8 @@ pizza_review_system/
 │   ├── api.py          # FastAPI route handler
 │   ├── core.py         # Prompt logic, LLM calls, city extraction
 │   ├── vector.py       # Vector store loading & query interface
+│   ├── cache.py        # Semantic caching implementation
+│   ├── cache_metrics.py# Cache performance tracking
 │   └── logger_config.py# Logging config
 ├── data/               # Contains review CSV file
 ├── logs/               # Output logs (app.log, vector.log, etc.)
@@ -48,7 +52,7 @@ pizza_review_system/
 ├── Dockerfile          # Container build instructions
 ├── docker-compose.yml  # Optional container orchestrator
 ├── requirements.txt    # Python dependencies
-└── README.md           # You're here.
+└── README.md          # You're here.
 ```
 
 ---
@@ -65,19 +69,32 @@ pizza_review_system/
 * Filters reviews by city and meaning
 * Uses sentence embeddings and ChromaDB for similarity search
 
+### ✅ Smart Caching System
+
+* Semantic similarity matching with 0.92 threshold
+* 7-day TTL for cache entries
+* Hit count tracking for analytics
+* Maximum 1000 cache entries
+* Automatic cache cleanup
+
 ### ✅ Modular RAG Backend (FastAPI)
 
 * `/ask-pizza` endpoint receives questions and returns structured JSON
+* `/cache-stats` (POST, Admin) for monitoring cache performance metrics
+* `/cached-qa` (GET, Admin) for viewing all cached Q&A pairs
+* Secured admin endpoints with API key authentication
 * Can be consumed by any frontend (Streamlit, React, mobile app, etc.)
 
 ### ✅ Frontend (Streamlit)
 
 * Allows toggling between LLMs
 * Displays generated answers and source reviews with metadata
+* Shows cache performance metrics
 
 ### ✅ Logging
 
 * Tracks LLM calls, user queries, vector DB usage
+* Cache hit/miss monitoring
 * Logs to file and terminal
 
 ---
@@ -138,6 +155,34 @@ Spiciest toppings in Haifa?
 Authentic Neapolitan pizza in JLM?
 Where to find gluten-free pizza in Holon?
 Top-rated places for pizza crust?
+```
+
+---
+
+## 📊 Cache Performance
+
+The caching system provides:
+* Semantic similarity matching for similar queries
+* Performance metrics tracking
+* Hit rate and time saved analytics
+* Automatic cache cleanup for stale entries
+* Safe concurrent access with proper locking
+* Secured admin-only access to cache data
+
+Admin endpoints (requires API key):
+* Performance stats: `POST http://localhost:8000/cache-stats`
+* View cached Q&A: `GET http://localhost:8000/cached-qa`
+
+To access admin endpoints, set up your API key:
+
+```bash
+# In .env file
+ADMIN_API_KEY="your-secure-api-key-here"
+```
+
+Then use the key in your requests:
+```bash
+curl -H "X-Admin-Key: your-secure-api-key-here" http://localhost:8000/cached-qa
 ```
 
 ---

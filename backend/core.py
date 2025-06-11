@@ -5,6 +5,7 @@ from langchain_ollama.llms import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 from backend.vector import get_retriever
+from backend.cache import get_cached_response, cache_response
 from logger_config import setup_logger
 from dotenv import load_dotenv
 import os
@@ -130,6 +131,12 @@ def format_reviews(docs: list) -> str:
 def get_pizza_answer(question: str, use_cloud_llm: bool = False) -> tuple[str, list]:
     logger.info("-------------- 🚀 Handling new pizza question --------------")
 
+    # Try cache first
+    cached_result = get_cached_response(question)
+    if cached_result:
+        logger.info("🎯 Using cached response")
+        return cached_result
+
     llm = load_llm(use_cloud_llm)
 
     # build chains  
@@ -145,6 +152,9 @@ def get_pizza_answer(question: str, use_cloud_llm: bool = False) -> tuple[str, l
     logger.info("🧠 Calling LLM to generate answer")
     answer = answer_chain.invoke({"reviews": reviews, "question": question})
     answer_text = answer.content if hasattr(answer, "content") else str(answer)
+
+    # Cache the response
+    cache_response(question, answer_text, docs)
 
     logger.info("✅ Answer ready")
     return answer_text, docs
